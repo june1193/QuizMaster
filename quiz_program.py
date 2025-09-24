@@ -133,6 +133,9 @@ class QuizProgram:
         columns = ("번호", "문제", "정답", "틀린 횟수")
         self.question_tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=15)
         
+        # 더블클릭 이벤트 바인딩
+        self.question_tree.bind('<Double-1>', self.edit_question)
+        
         # 컬럼 설정
         self.question_tree.heading("번호", text="번호")
         self.question_tree.heading("문제", text="문제")
@@ -187,6 +190,32 @@ class QuizProgram:
                 self.save_data()
                 self.refresh_question_list()
                 messagebox.showinfo("성공", "문제가 추가되었습니다!")
+            else:
+                messagebox.showwarning("경고", "문제와 정답을 모두 입력해주세요.")
+    
+    def edit_question(self, event):
+        """선택된 문제를 수정합니다."""
+        selection = self.question_tree.selection()
+        if not selection:
+            return
+        
+        item = selection[0]
+        index = self.question_tree.index(item)
+        question = self.questions[index]
+        
+        # 수정 다이얼로그 표시
+        dialog = QuestionDialog(self.root, "문제 수정", question)
+        if dialog.result:
+            question_text = dialog.result["question"]
+            answer_text = dialog.result["answer"]
+            
+            if question_text and answer_text:
+                # 문제 수정
+                self.questions[index]["question"] = question_text
+                self.questions[index]["answer"] = answer_text
+                self.save_data()
+                self.refresh_question_list()
+                messagebox.showinfo("성공", "문제가 수정되었습니다!")
             else:
                 messagebox.showwarning("경고", "문제와 정답을 모두 입력해주세요.")
     
@@ -511,7 +540,7 @@ class SettingsDialog:
 
 
 class QuestionDialog:
-    def __init__(self, parent, title):
+    def __init__(self, parent, title, existing_question=None):
         self.result = None
         
         # 다이얼로그 창 생성
@@ -534,6 +563,11 @@ class QuestionDialog:
         tk.Label(self.dialog, text="정답:", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(0, 5))
         self.answer_entry = tk.Entry(self.dialog, font=("Arial", 12))
         self.answer_entry.pack(fill=tk.X, padx=10, pady=(0, 20))
+        
+        # 기존 문제 데이터가 있으면 미리 채워넣기
+        if existing_question:
+            self.question_text.insert("1.0", existing_question["question"])
+            self.answer_entry.insert(0, existing_question["answer"])
         
         # 버튼 프레임
         button_frame = tk.Frame(self.dialog)
