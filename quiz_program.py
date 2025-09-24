@@ -284,7 +284,7 @@ class QuizProgram:
         
         self.answer_entry = tk.Entry(answer_frame, font=("Arial", 12))
         self.answer_entry.pack(fill=tk.X, padx=10, pady=10)
-        self.answer_entry.bind('<Return>', lambda e: self.check_answer())
+        self.answer_entry.bind('<Return>', self.on_enter_key)
         
         # 결과 표시
         self.result_label = tk.Label(self.current_frame, text="", 
@@ -296,16 +296,17 @@ class QuizProgram:
         button_frame.pack(fill=tk.X, pady=10)
         
         # 제출 버튼
-        submit_btn = tk.Button(button_frame, text="제출", 
-                              command=self.check_answer, 
-                              bg="#4CAF50", fg="white", font=("Arial", 10, "bold"))
-        submit_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self.submit_btn = tk.Button(button_frame, text="제출", 
+                                   command=self.check_answer, 
+                                   bg="#4CAF50", fg="white", font=("Arial", 10, "bold"))
+        self.submit_btn.pack(side=tk.LEFT, padx=(0, 10))
         
         # 다음 문제 버튼
-        next_btn = tk.Button(button_frame, text="다음 문제", 
-                            command=self.next_question, 
-                            bg="#2196F3", fg="white", font=("Arial", 10, "bold"))
-        next_btn.pack(side=tk.LEFT, padx=(0, 10))
+        self.next_btn = tk.Button(button_frame, text="다음 문제", 
+                                 command=self.next_question, 
+                                 bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+                                 state="disabled")
+        self.next_btn.pack(side=tk.LEFT, padx=(0, 10))
         
         # 홈으로 버튼
         home_btn = tk.Button(button_frame, text="홈으로", 
@@ -350,6 +351,19 @@ class QuizProgram:
         self.answer_entry.delete(0, tk.END)
         self.result_label.config(text="")
         self.answer_entry.focus()
+        
+        # 버튼 상태 초기화
+        self.submit_btn.config(state="normal")
+        self.next_btn.config(state="disabled")
+    
+    def on_enter_key(self, event):
+        """엔터 키 이벤트 핸들러"""
+        if self.submit_btn['state'] == 'normal':
+            # 제출 버튼이 활성화되어 있으면 답안 확인
+            self.check_answer()
+        elif self.next_btn['state'] == 'normal':
+            # 다음 문제 버튼이 활성화되어 있으면 다음 문제로
+            self.next_question()
     
     def check_answer(self):
         """답안을 확인합니다."""
@@ -361,15 +375,19 @@ class QuizProgram:
         
         if user_answer.lower() == correct_answer.lower():
             self.result_label.config(text="✅ 정답입니다!", fg="green")
+            # 정답일 때는 자동으로 다음 문제로
+            self.root.after(1000, self.next_question)
         else:
-            self.result_label.config(text="❌ 틀렸습니다!", fg="red")
+            # 틀렸을 때는 정답을 보여주고 멈춤
+            self.result_label.config(text=f"❌ 틀렸습니다!\n정답: {correct_answer}", fg="red")
             # 틀린 횟수 증가
             self.current_question["wrong_count"] += 1
             self.wrong_count_session += 1
             self.save_data()
-        
-        # 결과 표시 후 잠시 후 다음 문제로 (1초로 단축)
-        self.root.after(1000, self.next_question)
+            
+            # 다음 문제 버튼 활성화
+            self.next_btn.config(state="normal")
+            self.submit_btn.config(state="disabled")
     
     def show_completion_dialog(self):
         """모든 문제 완료 시 결과를 표시합니다."""
