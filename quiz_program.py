@@ -413,8 +413,9 @@ class QuizProgram:
             self.result_label.config(text="✅ 정답입니다!", fg="green")
             # 답안 확인 상태로 설정 (버그 수정)
             self.answer_checked = True
-            # 정답일 때는 자동으로 다음 문제로
-            self.root.after(1000, self.next_question)
+            # 다음 문제 버튼 활성화
+            self.next_btn.config(state="normal")
+            self.submit_btn.config(state="disabled")
         else:
             # 틀렸을 때는 정답을 보여주고 멈춤
             self.result_label.config(text=f"❌ 틀렸습니다!\n정답: {correct_answer}", fg="red")
