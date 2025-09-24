@@ -384,6 +384,9 @@ class QuizProgram:
         # 버튼 상태 초기화
         self.submit_btn.config(state="normal")
         self.next_btn.config(state="disabled")
+        
+        # 답안 확인 상태 초기화 (버그 수정)
+        self.answer_checked = False
     
     def on_enter_key(self, event):
         """엔터 키 이벤트 핸들러"""
@@ -399,11 +402,17 @@ class QuizProgram:
         if not hasattr(self, 'current_question'):
             return
         
+        # 이미 답안을 확인한 상태라면 무시 (버그 수정)
+        if hasattr(self, 'answer_checked') and self.answer_checked:
+            return
+        
         user_answer = self.answer_entry.get().strip()
         correct_answer = self.current_question["answer"].strip()
         
         if user_answer.lower() == correct_answer.lower():
             self.result_label.config(text="✅ 정답입니다!", fg="green")
+            # 답안 확인 상태로 설정 (버그 수정)
+            self.answer_checked = True
             # 정답일 때는 자동으로 다음 문제로
             self.root.after(1000, self.next_question)
         else:
@@ -414,6 +423,8 @@ class QuizProgram:
             self.wrong_count_session += 1
             self.save_data()
             
+            # 답안 확인 상태로 설정 (버그 수정)
+            self.answer_checked = True
             # 다음 문제 버튼 활성화
             self.next_btn.config(state="normal")
             self.submit_btn.config(state="disabled")
