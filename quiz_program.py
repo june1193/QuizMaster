@@ -397,6 +397,10 @@ class QuizProgram:
             # 다음 문제 버튼이 활성화되어 있으면 다음 문제로
             self.next_question()
     
+    def normalize_answer(self, answer):
+        """답안을 정규화합니다 (띄어쓰기 제거, 소문자 변환)."""
+        return ''.join(answer.split()).lower()
+    
     def check_answer(self):
         """답안을 확인합니다."""
         if not hasattr(self, 'current_question'):
@@ -409,7 +413,8 @@ class QuizProgram:
         user_answer = self.answer_entry.get().strip()
         correct_answer = self.current_question["answer"].strip()
         
-        if user_answer.lower() == correct_answer.lower():
+        # 띄어쓰기를 무시하고 비교
+        if self.normalize_answer(user_answer) == self.normalize_answer(correct_answer):
             self.result_label.config(text="✅ 정답입니다!", fg="green")
             # 답안 확인 상태로 설정 (버그 수정)
             self.answer_checked = True
