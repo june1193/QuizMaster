@@ -226,17 +226,34 @@ class QuizProgram:
             messagebox.showwarning("경고", "삭제할 문제를 선택해주세요.")
             return
         
-        if messagebox.askyesno("확인", "선택한 문제를 삭제하시겠습니까?"):
-            item = selection[0]
-            index = self.question_tree.index(item)
-            del self.questions[index]
+        # 선택된 문제 개수에 따른 메시지
+        count = len(selection)
+        if count == 1:
+            confirm_msg = "선택한 문제를 삭제하시겠습니까?"
+            success_msg = "문제가 삭제되었습니다!"
+        else:
+            confirm_msg = f"선택한 {count}개의 문제를 삭제하시겠습니까?"
+            success_msg = f"{count}개의 문제가 삭제되었습니다!"
+        
+        if messagebox.askyesno("확인", confirm_msg):
+            # 선택된 모든 문제의 인덱스를 구하고 내림차순으로 정렬 (뒤에서부터 삭제)
+            indices = []
+            for item in selection:
+                index = self.question_tree.index(item)
+                indices.append(index)
+            indices.sort(reverse=True)  # 뒤에서부터 삭제해야 인덱스가 꼬이지 않음
+            
+            # 선택된 모든 문제 삭제
+            for index in indices:
+                del self.questions[index]
+            
             self.save_data()
             self.refresh_question_list()
-            messagebox.showinfo("성공", "문제가 삭제되었습니다!")
+            messagebox.showinfo("성공", success_msg)
     
     def show_settings(self):
         """설정 화면을 표시합니다."""
-        dialog = SettingsDialog(self.root, self.settings, self.save_settings)
+        dialog = SettingsDialog(self.root, self.settings, self.save_settings, self)
         # 설정이 저장되었으면 연습 시작
         if dialog.result:
             # 설정을 메인 클래스에 반영
@@ -457,9 +474,10 @@ class QuizProgram:
 
 
 class SettingsDialog:
-    def __init__(self, parent, settings, save_callback):
+    def __init__(self, parent, settings, save_callback, quiz_app=None):
         self.settings = settings.copy()
         self.save_callback = save_callback
+        self.quiz_app = quiz_app
         self.result = False
         
         # 다이얼로그 창 생성
@@ -525,6 +543,12 @@ class SettingsDialog:
                               bg="#f44336", fg="white", font=("Arial", 10, "bold"))
         cancel_btn.pack(side=tk.LEFT)
         
+        # 틀린횟수 초기화 버튼
+        reset_btn = tk.Button(button_frame, text="틀린횟수 초기화", 
+                             command=self.reset_wrong_counts, 
+                             bg="#FF9800", fg="white", font=("Arial", 10, "bold"))
+        reset_btn.pack(side=tk.RIGHT)
+        
         # 포커스 설정
         wrong_count_entry.focus()
         
@@ -550,6 +574,22 @@ class SettingsDialog:
                 
         except ValueError:
             messagebox.showwarning("경고", "틀린 횟수는 숫자로 입력해주세요.")
+    
+    def reset_wrong_counts(self):
+        """틀린횟수를 초기화합니다."""
+        if messagebox.askyesno("확인", "모든 문제의 틀린횟수가 초기화 됩니다.\n정말 초기화하시겠습니까?"):
+            if self.quiz_app:
+                # 모든 문제의 틀린횟수 초기화
+                for question in self.quiz_app.questions:
+                    question["wrong_count"] = 0
+                self.quiz_app.save_data()
+                # 홈 화면의 리스트 새로고침
+                self.quiz_app.refresh_question_list()
+                messagebox.showinfo("완료", "모든 문제의 틀린횟수가 초기화되었습니다!")
+            else:
+                messagebox.showerror("오류", "문제 데이터에 접근할 수 없습니다.")
+            
+            self.dialog.destroy()
     
     def cancel_clicked(self):
         """취소 버튼 클릭"""
